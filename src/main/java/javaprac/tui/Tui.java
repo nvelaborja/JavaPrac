@@ -32,6 +32,7 @@ public final class Tui {
     private final KeyPump keys;
     private final Grader grader;
     private final Sounds sounds;
+    private final FramePainter painter = new FramePainter();
     private final History history;
     private int solved;
     private int skipped;
@@ -86,6 +87,7 @@ public final class Tui {
         boolean showSolution = false;
         Instant startedAt = null;
         Instant flashUntil = Instant.MIN;
+        painter.reset();
         boolean dirty = true;
         long lastDrawNanos = 0;
 
@@ -196,9 +198,11 @@ public final class Tui {
     }
 
     private void draw(Screen screen, Screen.Play play) {
-        Screen.Frame frame = screen.renderPlay(play, width(), height());
-        out.print(frame.ansi() + Ansi.moveTo(frame.cursorRow(), frame.cursorCol()) + Ansi.SHOW_CURSOR);
-        out.flush();
+        String update = painter.paint(screen.renderPlay(play, width(), height()));
+        if (!update.isEmpty()) {
+            out.print(update);
+            out.flush();
+        }
     }
 
     /** True (and clears the screen) when the terminal changed size since the last check. */
@@ -212,6 +216,7 @@ public final class Tui {
         if (!first) {
             out.print(Ansi.ESC + "2J");
         }
+        painter.reset();
         return true;
     }
 

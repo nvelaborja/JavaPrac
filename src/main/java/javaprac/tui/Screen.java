@@ -23,7 +23,12 @@ public final class Screen {
                           boolean revealed, String submitted, int solvedThisSession) {}
 
     /** The rendered frame plus where the real terminal cursor belongs. */
-    public record Frame(String ansi, int cursorRow, int cursorCol) {}
+    public record Frame(List<String> rows, int cursorRow, int cursorCol) {
+        /** Every row, positioned absolutely: what a terminal needs to show this frame from scratch. */
+        public String ansi() {
+            return compose(rows, rows.size());
+        }
+    }
 
     private int top;
     private int left;
@@ -83,7 +88,7 @@ public final class Screen {
 
         int cursorRow = bodyStartRow + (ed.row() - top);
         int cursorCol = 2 + GUTTER + (ed.col() - left);
-        return new Frame(compose(rows, height), cursorRow, cursorCol);
+        return new Frame(List.copyOf(rows.subList(0, Math.min(rows.size(), height))), cursorRow, cursorCol);
     }
 
     public String renderSummary(Summary s, int width, int height) {
@@ -247,10 +252,15 @@ public final class Screen {
 
     private static Frame tooSmall(int width, int height) {
         String msg = "Terminal too small (" + width + "x" + height + "). Need at least " + MIN_WIDTH + "x" + MIN_HEIGHT + ".";
-        return new Frame(Ansi.HIDE_CURSOR + Ansi.moveTo(1, 1) + Ansi.CLEAR_BELOW + msg, 1, 1);
+        List<String> rows = new ArrayList<>();
+        rows.add(msg);
+        while (rows.size() < height) {
+            rows.add("");
+        }
+        return new Frame(List.copyOf(rows), 1, 1);
     }
 
-    private static String compose(List<String> rows, int height) {
+    static String compose(List<String> rows, int height) {
         StringBuilder sb = new StringBuilder(Ansi.HIDE_CURSOR);
         for (int i = 0; i < Math.min(rows.size(), height); i++) {
             sb.append(Ansi.moveTo(i + 1, 1)).append(rows.get(i)).append(Ansi.CLEAR_TO_EOL);
