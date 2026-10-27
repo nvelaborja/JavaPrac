@@ -1,0 +1,196 @@
+- id: types.record-point
+  title: A record
+  tags: [records]
+  difficulty: 1
+  kind: declarations
+  prompt: Declare a record named Point with int components x and y.
+  asserts:
+    - new Point(1, 2).equals(new Point(1, 2))
+    - new Point(1, 2).x() == 1
+    - new Point(1, 2).toString().equals("Point[x=1, y=2]")
+  structure:
+    require: [class:record]
+  hints:
+    - "A record declares its components in the header and generates the accessors, equals, hashCode and toString."
+    - "record Point(int x, int y) {}"
+  reference: record Point(int x, int y) {}
+  rejects:
+    - |-
+      class Point {
+          int x;
+          int y;
+      }
+
+- id: types.record-compact-constructor
+  title: Validate in a record
+  tags: [records, exceptions]
+  difficulty: 2
+  kind: declarations
+  prompt: |-
+    Declare a record Range(int lo, int hi) whose compact constructor throws IllegalArgumentException when lo > hi.
+  asserts:
+    - new Range(1, 2).hi() == 2
+    - throwsA(IllegalArgumentException.class, () -> new Range(3, 1))
+    - '!throwsA(Throwable.class, () -> new Range(2, 2))'
+  structure:
+    require: [class:record, throw]
+  hints:
+    - "A compact constructor has no parameter list. It runs before the fields are assigned."
+    - "Range { if (lo > hi) { throw new IllegalArgumentException(...); } }"
+  reference: |-
+    record Range(int lo, int hi) {
+        Range {
+            if (lo > hi) {
+                throw new IllegalArgumentException("lo > hi");
+            }
+        }
+    }
+
+- id: types.enum-with-field
+  title: An enum with a field
+  tags: [enums]
+  difficulty: 2
+  kind: declarations
+  prompt: |-
+    Declare an enum Level with constants LOW (weight 1) and HIGH (weight 3), and a method weight() that returns the weight.
+  asserts:
+    - Level.valueOf("HIGH").weight() == 3
+    - Level.LOW.weight() == 1
+    - Level.values().length == 2
+  structure:
+    require: [class:enum]
+  hints:
+    - "Enum constants can pass arguments to a constructor: LOW(1)."
+    - "Add a private final int field, a constructor, and a getter."
+  reference: |-
+    enum Level {
+        LOW(1), HIGH(3);
+
+        private final int weight;
+
+        Level(int weight) {
+            this.weight = weight;
+        }
+
+        int weight() {
+            return weight;
+        }
+    }
+
+- id: types.interface-default
+  title: Default method
+  tags: [interfaces]
+  difficulty: 2
+  kind: declarations
+  prompt: |-
+    Declare an interface Greeter with an abstract method String name() and a default method String greet() that
+    returns "Hello, " + name() + "!".
+  asserts:
+    - ((Greeter) () -> "Bo").greet().equals("Hello, Bo!")
+  structure:
+    require: [class:interface, modifier:default]
+  hints:
+    - "Interface methods are abstract unless marked default (with a body)."
+    - "default String greet() { return \"Hello, \" + name() + \"!\"; }"
+  reference: |-
+    interface Greeter {
+        String name();
+
+        default String greet() {
+            return "Hello, " + name() + "!";
+        }
+    }
+
+- id: types.sealed-shapes
+  title: Sealed hierarchy
+  tags: [sealed, records, interfaces]
+  difficulty: 3
+  kind: declarations
+  prompt: |-
+    Declare a sealed interface Shape that permits exactly two records: Circle(double r) and Square(double side).
+  asserts:
+    - Shape.class.isSealed()
+    - Shape.class.getPermittedSubclasses().length == 2
+    - new Circle(1.0).r() == 1.0
+    - Shape.class.isAssignableFrom(Square.class)
+  structure:
+    require: [modifier:sealed, class:record]
+  hints:
+    - "sealed interface Shape permits A, B { }"
+    - "Each permitted type must say implements Shape."
+  reference: |-
+    sealed interface Shape permits Circle, Square {}
+
+    record Circle(double r) implements Shape {}
+
+    record Square(double side) implements Shape {}
+
+- id: types.generic-method
+  title: Generic max
+  tags: [generics]
+  difficulty: 3
+  kind: declarations
+  prompt: |-
+    Declare a class Util with a static generic method max(a, b) that works for any T that is Comparable to itself.
+  asserts:
+    - Util.max(3, 5) == 5
+    - Util.max("a", "b").equals("b")
+  structure:
+    require: [class:class, modifier:static]
+  hints:
+    - "Type parameters go before the return type: static <T ...> T name(...)."
+    - "<T extends Comparable<T>> and a.compareTo(b)"
+  reference: |-
+    class Util {
+        static <T extends Comparable<T>> T max(T a, T b) {
+            return a.compareTo(b) >= 0 ? a : b;
+        }
+    }
+
+- id: types.abstract-class
+  title: Abstract class
+  tags: [classes]
+  difficulty: 2
+  kind: declarations
+  prompt: |-
+    Declare an abstract class Animal with an abstract method String sound(), and a class Dog that extends Animal
+    and returns "Woof".
+  asserts:
+    - new Dog().sound().equals("Woof")
+    - java.lang.reflect.Modifier.isAbstract(Animal.class.getModifiers())
+    - Animal.class.isAssignableFrom(Dog.class)
+  structure:
+    require: [modifier:abstract]
+  hints:
+    - "An abstract method has no body and forces subclasses to implement it."
+    - "abstract class Animal { abstract String sound(); }"
+  reference: |-
+    abstract class Animal {
+        abstract String sound();
+    }
+
+    class Dog extends Animal {
+        @Override
+        String sound() {
+            return "Woof";
+        }
+    }
+
+- id: types.lambda-function
+  title: A lambda
+  tags: [lambdas]
+  difficulty: 1
+  kind: statements
+  prompt: |-
+    Declare a Function<Integer, Integer> named twice that doubles its input using a lambda, then store twice.apply(21)
+    in an int named r.
+  asserts:
+    - r == 42
+  structure:
+    require: [lambda]
+  hints:
+    - "Function<A, B> has a single method: B apply(A a)."
+    - "x -> x * 2"
+  reference: |-
+    Function<Integer, Integer> twice = x -> x * 2;
+    int r = twice.apply(21);

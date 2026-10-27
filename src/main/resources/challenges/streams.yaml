@@ -1,0 +1,312 @@
+- id: streams.limit-first-n
+  title: First five
+  tags: [streams]
+  difficulty: 1
+  kind: expression
+  prompt: Use a stream to return the first 5 elements of nums as a List<Integer>.
+  given: |
+    List<Integer> nums = List.of(5, 3, 8, 1, 8, 2, 9, 4);
+  asserts:
+    - result.equals(List.of(5, 3, 8, 1, 8))
+  structure:
+    require: [call:stream, call:limit]
+    forbid: [loop]
+  hints:
+    - "Short-circuiting operations stop a stream early."
+    - "Stream has a method named limit(n). End the pipeline with a terminal operation that builds a List."
+  reference: nums.stream().limit(5).toList();
+  rejects:
+    - nums.subList(0, 5)
+
+- id: streams.filter-evens
+  title: Keep the evens
+  tags: [streams]
+  difficulty: 1
+  kind: expression
+  prompt: Use a stream to return only the even numbers from nums, in order.
+  given: |
+    List<Integer> nums = List.of(1, 2, 3, 4, 5, 6);
+  asserts:
+    - result.equals(List.of(2, 4, 6))
+  structure:
+    require: [call:filter]
+    forbid: [loop]
+  hints:
+    - "filter keeps the elements that match a predicate."
+    - "The predicate is a lambda: n -> n % 2 == 0"
+  reference: nums.stream().filter(n -> n % 2 == 0).toList();
+
+- id: streams.map-lengths
+  title: Word lengths
+  tags: [streams]
+  difficulty: 1
+  kind: expression
+  prompt: Use a stream to turn words into a List<Integer> of each word's length.
+  given: |
+    List<String> words = List.of("kiwi", "apple", "fig");
+  asserts:
+    - result.equals(List.of(4, 5, 3))
+  structure:
+    require: [call:map]
+    forbid: [loop]
+  hints:
+    - "map transforms each element into something else."
+    - "A method reference works here: String::length"
+  reference: words.stream().map(String::length).toList();
+
+- id: streams.sum-ints
+  title: Sum with a stream
+  tags: [streams, primitive-streams]
+  difficulty: 1
+  kind: expression
+  prompt: Compute the sum of nums using a stream.
+  given: |
+    List<Integer> nums = List.of(4, 8, 15, 16, 23, 42);
+  asserts:
+    - result == 108
+  structure:
+    require: [call:stream]
+    forbid: [loop]
+  hints:
+    - "Primitive streams like IntStream have a built-in sum()."
+    - "Convert with mapToInt(Integer::intValue), then call sum()."
+  reference: nums.stream().mapToInt(Integer::intValue).sum();
+
+- id: streams.find-first
+  title: First match
+  tags: [streams, optional]
+  difficulty: 1
+  kind: expression
+  prompt: |-
+    Find the first name in names that starts with "b". Return the Optional<String> itself (do not unwrap it).
+  given: |
+    List<String> names = List.of("alice", "bob", "bella", "carl");
+  asserts:
+    - result.equals(Optional.of("bob"))
+  structure:
+    require: [call:findFirst]
+  hints:
+    - "findFirst is a terminal operation that returns an Optional."
+    - "filter(n -> n.startsWith(\"b\")) first, then findFirst()."
+  reference: names.stream().filter(n -> n.startsWith("b")).findFirst();
+
+- id: streams.drop-last
+  title: All but the last two
+  tags: [streams]
+  difficulty: 2
+  kind: expression
+  prompt: Use a stream to return every element of items except the last 2.
+  given: |
+    List<String> items = List.of("a", "b", "c", "d", "e");
+  asserts:
+    - result.equals(List.of("a", "b", "c"))
+  structure:
+    require: [call:stream]
+  hints:
+    - "You already know limit(n); the count you want is size() - 2."
+    - "items.stream().limit(items.size() - 2)"
+  reference: items.stream().limit(items.size() - 2).toList();
+
+- id: streams.group-by-length
+  title: Group by length
+  tags: [streams, collectors]
+  difficulty: 2
+  kind: expression
+  prompt: Group words by their length into a Map<Integer, List<String>>, keeping encounter order within each list.
+  given: |
+    List<String> words = List.of("one", "two", "three", "four", "five", "six");
+  asserts:
+    - result.equals(Map.of(3, List.of("one", "two", "six"), 4, List.of("four", "five"), 5, List.of("three")))
+  structure:
+    require: [call:groupingBy]
+  hints:
+    - "Collectors has a groupingBy collector."
+    - "collect(Collectors.groupingBy(String::length))"
+  reference: words.stream().collect(Collectors.groupingBy(String::length));
+
+- id: streams.count-by-first-letter
+  title: Count by first letter
+  tags: [streams, collectors]
+  difficulty: 2
+  kind: expression
+  prompt: |-
+    Build a Map<Character, Long> from words that counts how many words start with each letter.
+  given: |
+    List<String> words = List.of("apple", "avocado", "banana", "blueberry", "cherry");
+  asserts:
+    - result.equals(Map.of('a', 2L, 'b', 2L, 'c', 1L))
+  structure:
+    require: [call:groupingBy, call:counting]
+  hints:
+    - "groupingBy accepts a second argument: a downstream collector."
+    - "Collectors.groupingBy(w -> w.charAt(0), Collectors.counting())"
+  reference: words.stream().collect(Collectors.groupingBy(w -> w.charAt(0), Collectors.counting()));
+
+- id: streams.partition-evens
+  title: Two buckets
+  tags: [streams, collectors]
+  difficulty: 2
+  kind: expression
+  prompt: |-
+    Split nums into two lists with one collector: even numbers under true, odd numbers under false.
+  given: |
+    List<Integer> nums = List.of(1, 2, 3, 4, 5, 6, 7);
+  asserts:
+    - result.get(true).equals(List.of(2, 4, 6))
+    - result.get(false).equals(List.of(1, 3, 5, 7))
+  structure:
+    require: [call:partitioningBy]
+  hints:
+    - "There is a collector specifically for a boolean split."
+    - "Collectors.partitioningBy(n -> n % 2 == 0)"
+  reference: nums.stream().collect(Collectors.partitioningBy(n -> n % 2 == 0));
+
+- id: streams.to-map-merge
+  title: Word to length, with duplicates
+  tags: [streams, collectors]
+  difficulty: 3
+  kind: expression
+  prompt: |-
+    Build a Map<String, Integer> from each word to its length. words contains a duplicate; keep the first value
+    instead of letting it blow up.
+  given: |
+    List<String> words = List.of("fig", "plum", "fig", "kiwi");
+  asserts:
+    - result.equals(Map.of("fig", 3, "plum", 4, "kiwi", 4))
+  structure:
+    require: [call:toMap]
+  hints:
+    - "toMap throws IllegalStateException on duplicate keys unless you give it a merge function."
+    - "Collectors.toMap(w -> w, String::length, (a, b) -> a)"
+  reference: words.stream().collect(Collectors.toMap(w -> w, String::length, (a, b) -> a));
+  rejects:
+    - words.stream().collect(Collectors.toMap(w -> w, String::length))
+
+- id: streams.joining
+  title: Join with brackets
+  tags: [streams, collectors]
+  difficulty: 2
+  kind: expression
+  prompt: 'Produce the String "[java, streams, collectors]" from tags with a stream collector.'
+  given: |
+    List<String> tags = List.of("java", "streams", "collectors");
+  asserts:
+    - result.equals("[java, streams, collectors]")
+  structure:
+    require: [call:joining]
+  hints:
+    - "Collectors.joining can take a delimiter, a prefix and a suffix."
+    - "Collectors.joining(\", \", \"[\", \"]\")"
+  reference: tags.stream().collect(Collectors.joining(", ", "[", "]"));
+
+- id: streams.range-squares
+  title: Squares of 1 to 5
+  tags: [streams, primitive-streams]
+  difficulty: 2
+  kind: expression
+  prompt: |-
+    Starting from an IntStream, produce a List<Integer> of the squares of 1 through 5 inclusive (1, 4, 9, 16, 25).
+  asserts:
+    - result.equals(List.of(1, 4, 9, 16, 25))
+  structure:
+    require: [call:rangeClosed|call:range]
+    forbid: [loop]
+  hints:
+    - "IntStream has static factory methods for a range of ints. range(1, 5) stops at 4; one variant includes the end."
+    - "IntStream.rangeClosed(1, 5).map(i -> i * i), then boxed() to get Integers before toList()."
+  reference: IntStream.rangeClosed(1, 5).map(i -> i * i).boxed().toList();
+
+- id: streams.max-by
+  title: Longest word
+  tags: [streams, optional]
+  difficulty: 2
+  kind: expression
+  prompt: Return the longest word as an Optional<String>, using a stream.
+  given: |
+    List<String> words = List.of("pear", "banana", "fig", "plum");
+  asserts:
+    - result.equals(Optional.of("banana"))
+  structure:
+    require: [call:max]
+  hints:
+    - "max takes a Comparator."
+    - "Comparator.comparingInt(String::length)"
+  reference: words.stream().max(Comparator.comparingInt(String::length));
+
+- id: streams.distinct-sorted-desc
+  title: Distinct, descending
+  tags: [streams]
+  difficulty: 2
+  kind: expression
+  prompt: Return nums with duplicates removed, sorted from largest to smallest.
+  given: |
+    List<Integer> nums = List.of(3, 1, 3, 2, 1, 5);
+  asserts:
+    - result.equals(List.of(5, 3, 2, 1))
+  structure:
+    require: [call:distinct, call:sorted]
+  hints:
+    - "distinct() and sorted() are both intermediate operations."
+    - "sorted(Comparator.reverseOrder())"
+  reference: nums.stream().distinct().sorted(Comparator.reverseOrder()).toList();
+
+- id: streams.flat-map
+  title: Flatten
+  tags: [streams]
+  difficulty: 2
+  kind: expression
+  prompt: Flatten nested into a single List<Integer> using a stream.
+  given: |
+    List<List<Integer>> nested = List.of(List.of(1, 2), List.of(3), List.of(4, 5));
+  asserts:
+    - result.equals(List.of(1, 2, 3, 4, 5))
+  structure:
+    require: [call:flatMap]
+  hints:
+    - "map would give you a Stream of Streams. You want the flattening version."
+    - "flatMap(List::stream)"
+  reference: nested.stream().flatMap(List::stream).toList();
+
+- id: streams.any-match
+  title: Any long word?
+  tags: [streams]
+  difficulty: 1
+  kind: expression
+  prompt: Return true if any word in words is longer than 4 characters.
+  given: |
+    List<String> words = List.of("alpha", "beta", "gamma");
+  cases:
+    - asserts:
+        - result
+    - given: |
+        List<String> words = List.of("a", "bb", "ccc");
+      asserts:
+        - '!result'
+  structure:
+    require: [call:anyMatch]
+  hints:
+    - "There are three boolean terminal operations: anyMatch, allMatch and noneMatch."
+    - "words.stream().anyMatch(w -> w.length() > 4)"
+  reference: words.stream().anyMatch(w -> w.length() > 4);
+
+- id: streams.average-or-zero
+  title: Average, or 0
+  tags: [streams, primitive-streams, optional]
+  difficulty: 2
+  kind: expression
+  prompt: Return the average of scores as a double, or 0.0 when the array is empty.
+  given: |
+    int[] scores = {80, 90, 100, 70};
+  cases:
+    - asserts:
+        - result == 85.0
+    - given: |
+        int[] scores = {};
+      asserts:
+        - result == 0.0
+  structure:
+    require: [call:average]
+  hints:
+    - "Arrays.stream(int[]) gives you an IntStream, and IntStream has average()."
+    - "average() returns an OptionalDouble. Give it a fallback with orElse."
+  reference: Arrays.stream(scores).average().orElse(0);

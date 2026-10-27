@@ -1,0 +1,123 @@
+- id: exceptions.catch-parse
+  title: Fallback on bad input
+  tags: [exceptions]
+  difficulty: 1
+  kind: statements
+  prompt: |-
+    Declare an int named n holding Integer.parseInt(raw). If raw isn't a number, n should be -1. Catch the specific exception.
+  given: |
+    String raw = "abc";
+  cases:
+    - asserts:
+        - n == -1
+    - given: |
+        String raw = "12";
+      asserts:
+        - n == 12
+  structure:
+    require: [try, catch]
+  hints:
+    - "parseInt throws NumberFormatException, which is unchecked."
+    - "Assign n in the try block and again in the catch block."
+  reference: |-
+    int n;
+    try {
+        n = Integer.parseInt(raw);
+    } catch (NumberFormatException e) {
+        n = -1;
+    }
+
+- id: exceptions.try-with-resources
+  title: Close automatically
+  tags: [exceptions, io]
+  difficulty: 2
+  kind: statements
+  prompt: |-
+    Declare a String named first holding the first line from a BufferedReader wrapped around
+    new StringReader("line1\nline2"). Use try-with-resources so the reader is closed.
+  asserts:
+    - first.equals("line1")
+  structure:
+    require: [try-with-resources, call:readLine]
+  hints:
+    - "Resources declared in the try parentheses are closed automatically, even on exceptions."
+    - "try (BufferedReader br = new BufferedReader(new StringReader(...))) { first = br.readLine(); }"
+  reference: |-
+    String first;
+    try (BufferedReader br = new BufferedReader(new StringReader("line1\nline2"))) {
+        first = br.readLine();
+    }
+
+- id: exceptions.custom-checked
+  title: A checked exception
+  tags: [exceptions, classes]
+  difficulty: 1
+  kind: declarations
+  prompt: |-
+    Declare a checked exception class InvalidAgeException with a constructor that takes a String message and passes it up.
+  asserts:
+    - new InvalidAgeException("x").getMessage().equals("x")
+    - Exception.class.isAssignableFrom(InvalidAgeException.class)
+    - '!RuntimeException.class.isAssignableFrom(InvalidAgeException.class)'
+  structure:
+    require: [class:class]
+  hints:
+    - "Checked exceptions extend Exception but not RuntimeException."
+    - "The constructor calls super(message)."
+  reference: |-
+    class InvalidAgeException extends Exception {
+        InvalidAgeException(String message) {
+            super(message);
+        }
+    }
+
+- id: exceptions.multi-catch-finally
+  title: Multi-catch and finally
+  tags: [exceptions]
+  difficulty: 2
+  kind: statements
+  prompt: |-
+    Call Integer.parseInt("x") inside a try. Use ONE catch block for both NumberFormatException and
+    NullPointerException that appends "bad;" to log, plus a finally block that appends "done".
+  given: |
+    StringBuilder log = new StringBuilder();
+  asserts:
+    - log.toString().equals("bad;done")
+  structure:
+    require: [multi-catch, finally]
+  hints:
+    - "A multi-catch separates the types with |."
+    - "catch (NumberFormatException | NullPointerException e)"
+  reference: |-
+    try {
+        Integer.parseInt("x");
+    } catch (NumberFormatException | NullPointerException e) {
+        log.append("bad;");
+    } finally {
+        log.append("done");
+    }
+
+- id: exceptions.throw-illegal-argument
+  title: Guard clause
+  tags: [exceptions]
+  difficulty: 1
+  kind: declarations
+  prompt: |-
+    Declare a class Checks with a static method void requirePositive(int n) that throws IllegalArgumentException when n <= 0.
+  asserts:
+    - throwsA(IllegalArgumentException.class, () -> Checks.requirePositive(0))
+    - throwsA(IllegalArgumentException.class, () -> Checks.requirePositive(-4))
+    - '!throwsA(Throwable.class, () -> Checks.requirePositive(1))'
+  structure:
+    require: [throw]
+  hints:
+    - "Validate at the boundary and fail fast."
+    - "if (n <= 0) { throw new IllegalArgumentException(\"n must be positive\"); }"
+  reference: |-
+    class Checks {
+        static void requirePositive(int n) {
+            if (n <= 0) {
+                throw new IllegalArgumentException("n must be positive");
+            }
+        }
+    }

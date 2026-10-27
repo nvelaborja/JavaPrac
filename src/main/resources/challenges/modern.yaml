@@ -1,0 +1,206 @@
+- id: modern.switch-expression
+  title: Switch expression
+  tags: [modern-java, switch]
+  difficulty: 1
+  kind: statements
+  prompt: |-
+    Declare a String named type that is "weekend" for day 6 or 7 and "weekday" otherwise. Use a switch expression.
+  given: |
+    int day = 6;
+  cases:
+    - asserts:
+        - type.equals("weekend")
+    - given: |
+        int day = 3;
+      asserts:
+        - type.equals("weekday")
+  structure:
+    require: [switch-expr]
+  hints:
+    - "A switch expression produces a value and uses arrows instead of break."
+    - "case 6, 7 -> \"weekend\"; default -> \"weekday\";"
+  reference: |-
+    String type = switch (day) {
+        case 6, 7 -> "weekend";
+        default -> "weekday";
+    };
+
+- id: modern.instanceof-pattern
+  title: Pattern matching for instanceof
+  tags: [modern-java]
+  difficulty: 2
+  kind: expression
+  prompt: Return the length of o if it is a String, otherwise -1. Use a pattern variable, not a cast.
+  given: |
+    Object o = "hello";
+  cases:
+    - asserts:
+        - result == 5
+    - given: |
+        Object o = 42;
+      asserts:
+        - result == -1
+  structure:
+    require: [instanceof]
+    forbid: [cast]
+  hints:
+    - "instanceof can bind a variable: o instanceof String s."
+    - "o instanceof String s ? s.length() : -1"
+  reference: 'o instanceof String s ? s.length() : -1;'
+
+- id: modern.record-pattern
+  title: Record pattern
+  tags: [modern-java, records]
+  difficulty: 3
+  kind: expression
+  prompt: |-
+    Return x + y if o is a Point, otherwise -1. Destructure the record directly in the instanceof test.
+  given: |
+    record Point(int x, int y) {}
+    Object o = new Point(3, 4);
+  cases:
+    - asserts:
+        - result == 7
+    - given: |
+        record Point(int x, int y) {}
+        Object o = "no";
+      asserts:
+        - result == -1
+  structure:
+    require: [instanceof]
+    forbid: [call:x, call:y]
+  hints:
+    - "Java 21 lets instanceof take a record pattern."
+    - "o instanceof Point(int x, int y) ? x + y : -1"
+  reference: 'o instanceof Point(int x, int y) ? x + y : -1;'
+
+- id: modern.switch-patterns
+  title: Switch on type
+  tags: [modern-java, switch]
+  difficulty: 3
+  kind: statements
+  prompt: |-
+    Declare a String named desc using a switch expression on o: an Integer gives "int " + the number, a String gives
+    "str " + the text, anything else gives "other".
+  given: |
+    Object o = 42;
+  cases:
+    - asserts:
+        - desc.equals("int 42")
+    - given: |
+        Object o = "hi";
+      asserts:
+        - desc.equals("str hi")
+    - given: |
+        Object o = 2.5;
+      asserts:
+        - desc.equals("other")
+  structure:
+    require: [switch-expr]
+    forbid: [cast, instanceof]
+  hints:
+    - "Case labels can be type patterns: case Integer i -> ..."
+    - "A switch over Object needs a default branch."
+  reference: |-
+    String desc = switch (o) {
+        case Integer i -> "int " + i;
+        case String s -> "str " + s;
+        default -> "other";
+    };
+
+- id: modern.text-block
+  title: Text block
+  tags: [modern-java, strings]
+  difficulty: 2
+  kind: statements
+  prompt: |-
+    Declare a String named json using a text block. It must contain three lines, each ending in a newline:
+    {   then   "a": 1   (indented two spaces)   then   }
+  asserts:
+    - |-
+      json.equals("{\n  \"a\": 1\n}\n")
+  hints:
+    - "Text blocks start with three quotes and a line break, and end with three quotes."
+    - "The closing quotes' column sets the indentation that is stripped. Put them on their own line for a trailing newline."
+  reference: |-
+    String json = """
+        {
+          "a": 1
+        }
+        """;
+
+- id: modern.optional-chain
+  title: Optional pipeline
+  tags: [modern-java, optional]
+  difficulty: 2
+  kind: expression
+  prompt: Trim and upper-case the name inside the Optional, or return "ANON" if it is empty. Do not call get() or isPresent().
+  given: |
+    Optional<String> name = Optional.of("  bob ");
+  cases:
+    - asserts:
+        - result.equals("BOB")
+    - given: |
+        Optional<String> name = Optional.empty();
+      asserts:
+        - result.equals("ANON")
+  structure:
+    require: [call:map, call:orElse]
+    forbid: [call:get, call:isPresent]
+  hints:
+    - "Optional has map, just like Stream."
+    - "name.map(String::strip).map(String::toUpperCase).orElse(\"ANON\")"
+  reference: name.map(String::strip).map(String::toUpperCase).orElse("ANON");
+
+- id: sorting.then-comparing
+  title: Sort by length, then alphabetically
+  tags: [sorting, comparators]
+  difficulty: 2
+  kind: statements
+  prompt: Sort words in place by length, breaking ties alphabetically.
+  given: |
+    List<String> words = new ArrayList<>(List.of("pear", "fig", "apple", "kiwi", "date"));
+  asserts:
+    - words.equals(List.of("fig", "date", "kiwi", "pear", "apple"))
+  structure:
+    require: [call:thenComparing]
+  hints:
+    - "Build the comparator from Comparator.comparingInt and chain a tie-breaker."
+    - "Comparator.comparingInt(String::length).thenComparing(Comparator.naturalOrder())"
+  reference: words.sort(Comparator.comparingInt(String::length).thenComparing(Comparator.naturalOrder()));
+
+- id: sorting.record-field-desc
+  title: Sort records descending
+  tags: [sorting, comparators, records]
+  difficulty: 2
+  kind: statements
+  prompt: Sort people in place by age, oldest first.
+  given: |
+    record Person(String name, int age) {}
+    List<Person> people = new ArrayList<>(List.of(new Person("ann", 30), new Person("bob", 25), new Person("cy", 41)));
+  asserts:
+    - people.get(0).name().equals("cy")
+    - people.get(2).name().equals("bob")
+  structure:
+    require: [call:sort]
+  hints:
+    - "Comparator.comparingInt takes a key extractor, and reversed() flips the order."
+    - "Comparator.comparingInt(Person::age).reversed()"
+  reference: people.sort(Comparator.comparingInt(Person::age).reversed());
+
+- id: sorting.intervals-by-start
+  title: Sort 2D arrays
+  tags: [sorting, arrays]
+  difficulty: 2
+  kind: statements
+  prompt: Sort intervals in place by their first element.
+  given: |
+    int[][] intervals = {{5, 6}, {1, 3}, {2, 4}};
+  asserts:
+    - Arrays.deepEquals(intervals, new int[][] {{1, 3}, {2, 4}, {5, 6}})
+  structure:
+    require: [call:sort]
+  hints:
+    - "Arrays.sort(T[], Comparator) works because int[] is an object."
+    - "Arrays.sort(intervals, Comparator.comparingInt(a -> a[0]))"
+  reference: Arrays.sort(intervals, Comparator.comparingInt(a -> a[0]));

@@ -1,0 +1,302 @@
+- id: collections.array-copy-range
+  title: Slice an array
+  tags: [arrays]
+  difficulty: 1
+  kind: expression
+  prompt: |-
+    Return a new int[] holding the elements of a at indexes 1, 2 and 3 (20, 30, 40).
+  given: |
+    int[] a = {10, 20, 30, 40, 50};
+  asserts:
+    - Arrays.equals(result, new int[] {20, 30, 40})
+  structure:
+    require: [call:copyOfRange]
+  hints:
+    - "java.util.Arrays has a method for copying part of an array."
+    - "copyOfRange(array, from, to): from is inclusive, to is exclusive."
+  reference: Arrays.copyOfRange(a, 1, 4);
+
+- id: collections.array-sort-desc
+  title: Sort descending in place
+  tags: [arrays, sorting]
+  difficulty: 2
+  kind: statements
+  prompt: Sort boxed in descending order, in place.
+  given: |
+    Integer[] boxed = {3, 1, 2, 5, 4};
+  asserts:
+    - Arrays.equals(boxed, new Integer[] {5, 4, 3, 2, 1})
+  structure:
+    require: [call:sort]
+  hints:
+    - "Arrays.sort(array, comparator) only works on object arrays, which is why this one is Integer[]."
+    - "Collections.reverseOrder() is a ready-made comparator."
+  reference: Arrays.sort(boxed, Collections.reverseOrder());
+
+- id: collections.grid-2d
+  title: A 3x4 grid
+  tags: [arrays]
+  difficulty: 1
+  kind: statements
+  prompt: |-
+    Declare an int[][] named grid with 3 rows and 4 columns, then set the cell in the last row and last column to 9.
+  asserts:
+    - grid.length == 3
+    - grid[0].length == 4
+    - grid[2][3] == 9
+    - grid[0][0] == 0
+  hints:
+    - "new int[rows][cols] allocates a zero-filled grid."
+    - "The last row is index 2 and the last column is index 3."
+  reference: |-
+    int[][] grid = new int[3][4];
+    grid[2][3] = 9;
+
+- id: collections.mutable-copy
+  title: A modifiable copy
+  tags: [lists]
+  difficulty: 1
+  kind: statements
+  prompt: |-
+    List.of returns an immutable list. Declare a modifiable List<String> named copy that starts with the contents
+    of fixed (a new ArrayList), then add "c" to copy. fixed must stay unchanged.
+  given: |
+    List<String> fixed = List.of("a", "b");
+  asserts:
+    - copy.equals(List.of("a", "b", "c"))
+    - fixed.size() == 2
+    - copy instanceof ArrayList
+  structure:
+    require: [new:ArrayList]
+  hints:
+    - "ArrayList has a constructor that takes another collection."
+    - "new ArrayList<>(fixed)"
+  reference: |-
+    List<String> copy = new ArrayList<>(fixed);
+    copy.add("c");
+
+- id: collections.remove-by-value
+  title: Remove by value, not index
+  tags: [lists]
+  difficulty: 2
+  kind: statements
+  prompt: Remove the value 10 (not the element at index 10) from nums.
+  given: |
+    List<Integer> nums = new ArrayList<>(List.of(10, 20, 30));
+  asserts:
+    - nums.equals(List.of(20, 30))
+  hints:
+    - "List has remove(int index) and remove(Object o). With a raw int literal, Java picks the index version."
+    - "nums.remove(Integer.valueOf(10)) or nums.remove((Integer) 10)"
+  reference: nums.remove(Integer.valueOf(10));
+  rejects:
+    - nums.remove(10);
+
+- id: collections.remove-if
+  title: Remove while iterating
+  tags: [lists]
+  difficulty: 2
+  kind: statements
+  prompt: Remove all even numbers from nums in place, without risking a ConcurrentModificationException.
+  given: |
+    List<Integer> nums = new ArrayList<>(List.of(1, 2, 3, 4, 5, 6));
+  asserts:
+    - nums.equals(List.of(1, 3, 5))
+  structure:
+    require: [call:removeIf|call:iterator]
+  hints:
+    - "Removing from a list inside a for-each loop over that same list is the bug to avoid."
+    - "nums.removeIf(n -> n % 2 == 0)"
+  reference: nums.removeIf(n -> n % 2 == 0);
+
+- id: collections.deque-stack
+  title: A stack
+  tags: [deque]
+  difficulty: 1
+  kind: statements
+  prompt: |-
+    Declare a Deque<Integer> named stack backed by an ArrayDeque. Push 1, 2 and 3, then pop once.
+  asserts:
+    - stack.size() == 2
+    - stack.peek() == 2
+    - stack instanceof ArrayDeque
+  structure:
+    require: [new:ArrayDeque, call:push, call:pop]
+  hints:
+    - "ArrayDeque is the modern stack. Stack and LinkedList are legacy choices."
+    - "push adds to the front, pop removes from the front."
+  reference: |-
+    Deque<Integer> stack = new ArrayDeque<>();
+    stack.push(1);
+    stack.push(2);
+    stack.push(3);
+    stack.pop();
+
+- id: collections.queue-fifo
+  title: A queue
+  tags: [deque]
+  difficulty: 1
+  kind: statements
+  prompt: |-
+    Declare a Queue<String> named q backed by an ArrayDeque. Offer "a" then "b", and poll once into a String named first.
+  asserts:
+    - first.equals("a")
+    - q.size() == 1
+    - q.peek().equals("b")
+  structure:
+    require: [new:ArrayDeque, call:offer, call:poll]
+  hints:
+    - "A queue is first in, first out."
+    - "offer to add at the tail, poll to remove from the head."
+  reference: |-
+    Queue<String> q = new ArrayDeque<>();
+    q.offer("a");
+    q.offer("b");
+    String first = q.poll();
+
+- id: collections.linked-hash-set
+  title: Dedupe, keep order
+  tags: [sets]
+  difficulty: 1
+  kind: expression
+  prompt: Return a Set containing the distinct elements of nums that iterates in first-seen order (3, 1, 2).
+  given: |
+    List<Integer> nums = List.of(3, 1, 3, 2, 1);
+  asserts:
+    - new ArrayList<>(result).equals(List.of(3, 1, 2))
+  structure:
+    require: [new:LinkedHashSet]
+  hints:
+    - "HashSet has no defined order, TreeSet sorts. One more Set remembers insertion order."
+    - "new LinkedHashSet<>(nums)"
+  reference: new LinkedHashSet<>(nums);
+
+- id: collections.map-merge
+  title: Count letters
+  tags: [maps]
+  difficulty: 2
+  kind: statements
+  prompt: |-
+    Declare a Map<Character, Integer> named counts holding how many times each letter appears in word. Use Map.merge.
+  given: |
+    String word = "banana";
+  asserts:
+    - counts.equals(Map.of('b', 1, 'a', 3, 'n', 2))
+  structure:
+    require: [call:merge]
+  hints:
+    - "merge(key, value, remapper): inserts value if absent, otherwise combines old and new."
+    - "counts.merge(c, 1, Integer::sum) for each c in word.toCharArray()"
+  reference: |-
+    Map<Character, Integer> counts = new HashMap<>();
+    for (char c : word.toCharArray()) {
+        counts.merge(c, 1, Integer::sum);
+    }
+
+- id: collections.compute-if-absent
+  title: Multimap with computeIfAbsent
+  tags: [maps]
+  difficulty: 3
+  kind: statements
+  prompt: |-
+    Declare a Map<Integer, List<String>> named byLength that groups words by length, using computeIfAbsent.
+  given: |
+    List<String> words = List.of("hi", "yo", "hey", "sup", "hello");
+  asserts:
+    - byLength.equals(Map.of(2, List.of("hi", "yo"), 3, List.of("hey", "sup"), 5, List.of("hello")))
+  structure:
+    require: [call:computeIfAbsent]
+  hints:
+    - "computeIfAbsent creates the value only when the key is missing, and returns the value either way."
+    - "byLength.computeIfAbsent(w.length(), k -> new ArrayList<>()).add(w)"
+  reference: |-
+    Map<Integer, List<String>> byLength = new HashMap<>();
+    for (String w : words) {
+        byLength.computeIfAbsent(w.length(), k -> new ArrayList<>()).add(w);
+    }
+
+- id: collections.get-or-default
+  title: Default for a missing key
+  tags: [maps]
+  difficulty: 1
+  kind: expression
+  prompt: Return the stock of "pear", or 0 if it isn't in the map.
+  given: |
+    Map<String, Integer> stock = new HashMap<>(Map.of("apple", 3));
+  cases:
+    - asserts:
+        - result == 0
+    - given: |
+        Map<String, Integer> stock = new HashMap<>(Map.of("apple", 3, "pear", 7));
+      asserts:
+        - result == 7
+  structure:
+    require: [call:getOrDefault]
+  hints:
+    - "Map.get returns null for a missing key, which would NPE when unboxed."
+    - "stock.getOrDefault(\"pear\", 0)"
+  reference: stock.getOrDefault("pear", 0);
+
+- id: collections.tree-map-floor
+  title: Letter grade lookup
+  tags: [maps, treemap]
+  difficulty: 3
+  kind: expression
+  prompt: |-
+    grades maps the lowest score for each letter to that letter. Return the letter for a score of 85, which is the
+    value of the entry with the greatest key that is less than or equal to 85.
+  given: |
+    TreeMap<Integer, String> grades = new TreeMap<>(Map.of(0, "F", 60, "D", 70, "C", 80, "B", 90, "A"));
+  asserts:
+    - result.equals("B")
+  structure:
+    require: [call:floorEntry|call:floorKey]
+  hints:
+    - "TreeMap keeps keys sorted and offers navigation methods."
+    - "floorEntry(85) returns the entry; call getValue() on it."
+  reference: grades.floorEntry(85).getValue();
+
+- id: collections.priority-queue-max
+  title: Max-heap
+  tags: [priority-queue]
+  difficulty: 2
+  kind: statements
+  prompt: |-
+    Declare a PriorityQueue<Integer> named pq that polls the largest element first. Add 3, 1 and 5, then poll once into an int named top.
+  asserts:
+    - top == 5
+    - pq.size() == 2
+    - pq.peek() == 3
+  structure:
+    require: [new:PriorityQueue]
+  hints:
+    - "PriorityQueue is a min-heap by default. Give it a comparator to flip that."
+    - "new PriorityQueue<>(Comparator.reverseOrder())"
+  reference: |-
+    PriorityQueue<Integer> pq = new PriorityQueue<>(Comparator.reverseOrder());
+    pq.add(3);
+    pq.add(1);
+    pq.add(5);
+    int top = pq.poll();
+
+- id: collections.iterate-entries
+  title: Walk the entries
+  tags: [maps]
+  difficulty: 1
+  kind: statements
+  prompt: |-
+    Using a for-each loop over ages.entrySet(), build a String named s that looks like "ann=30;bob=25;".
+  given: |
+    Map<String, Integer> ages = new TreeMap<>(Map.of("ann", 30, "bob", 25));
+  asserts:
+    - s.equals("ann=30;bob=25;")
+  structure:
+    require: [call:entrySet, foreach]
+  hints:
+    - "Each entry gives you getKey() and getValue()."
+    - "for (Map.Entry<String, Integer> e : ages.entrySet()) { ... }"
+  reference: |-
+    String s = "";
+    for (Map.Entry<String, Integer> e : ages.entrySet()) {
+        s += e.getKey() + "=" + e.getValue() + ";";
+    }
