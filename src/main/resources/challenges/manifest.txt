@@ -1,0 +1,7 @@
+# One YAML file per topic; add new files here.
+streams.yaml
+collections.yaml
+text-numbers.yaml
+types.yaml
+exceptions.yaml
+modern.yaml
