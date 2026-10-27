@@ -42,14 +42,14 @@ public final class Screen {
         }
         rows.add("");
 
-        boolean showingSolution = !p.solution().isEmpty();
-        int feedbackCap = showingSolution ? 18 : 6;
+        int feedbackCap = 6;
+        int solutionCap = 13;
         int givenCap = 6;
-        List<String> feedback = feedbackLines(p, width - 4, feedbackCap);
+        List<String> feedback = feedbackLines(p, width - 4, feedbackCap, solutionCap);
         List<String> given = givenLines(c, width, givenCap);
         int bodyHeight = height - (rows.size() + given.size() + 2 + feedback.size() + 1);
         if (bodyHeight < 5) {
-            feedback = feedbackLines(p, width - 4, showingSolution ? 8 : 3);
+            feedback = feedbackLines(p, width - 4, 3, 6);
             given = givenLines(c, width, 3);
             bodyHeight = height - (rows.size() + given.size() + 2 + feedback.size() + 1);
         }
@@ -155,24 +155,46 @@ public final class Screen {
         return out;
     }
 
-    private static List<String> feedbackLines(Play p, int width, int cap) {
-        List<String> out = new ArrayList<>();
+    /** Errors and hints (at most {@code statusCap} lines), then the revealed solution if any (at most {@code solutionCap}). */
+    private static List<String> feedbackLines(Play p, int width, int statusCap, int solutionCap) {
         if (p.grading()) {
-            out.add(Ansi.style(Ansi.DIM, "  … compiling and running"));
-            return out;
+            return List.of(Ansi.style(Ansi.DIM, "  … compiling and running"));
         }
+        List<String> out = statusLines(p, width, statusCap);
         if (!p.solution().isEmpty()) {
-            // the solution takes the place of feedback and hints so it gets the room
-            out.add(Ansi.style(Ansi.BOLD + Ansi.YELLOW, "  Solution (type it in to finish; ^R hides it)"));
-            for (String line : p.solution()) {
-                out.add("    " + Ansi.style(Ansi.CYAN, fit(line, width - 2)));
-            }
-            if (out.size() > cap) {
-                out = new ArrayList<>(out.subList(0, cap - 1));
-                out.add(Ansi.style(Ansi.DIM, "    … taller than the screen; ^N skip shows all of it"));
-            }
-            return out;
+            out.addAll(solutionLines(p, width, solutionCap));
         }
+        return out;
+    }
+
+    private static List<String> solutionLines(Play p, int width, int cap) {
+        List<String> out = new ArrayList<>();
+        out.add(Ansi.style(Ansi.BOLD + Ansi.YELLOW, "  Solution (type it in to finish; ^R hides it)"));
+        for (String line : p.solution()) {
+            out.add("    " + Ansi.style(Ansi.CYAN, fit(line, width - 2)));
+        }
+        if (out.size() > cap) {
+            out = new ArrayList<>(out.subList(0, cap - 1));
+            out.add(Ansi.style(Ansi.DIM, "    … more lines; ^N skip shows the full solution"));
+        }
+        return out;
+    }
+
+    /** Errors then hints. When space is short the errors shrink first, because the hint is what unblocks the player. */
+    private static List<String> statusLines(Play p, int width, int cap) {
+        List<String> errors = errorLines(p, width);
+        List<String> hints = hintLines(p, width);
+        int errorBudget = Math.max(2, cap - hints.size());
+        if (errors.size() > errorBudget) {
+            errors = new ArrayList<>(errors.subList(0, errorBudget));
+        }
+        List<String> out = new ArrayList<>(errors);
+        out.addAll(hints);
+        return out.size() > cap + 2 ? new ArrayList<>(out.subList(0, cap + 2)) : out;
+    }
+
+    private static List<String> errorLines(Play p, int width) {
+        List<String> out = new ArrayList<>();
         for (String message : p.feedback()) {
             if (message.startsWith(" ")) {
                 // preformatted (a source line or caret): wrapping would misalign the caret
@@ -184,14 +206,16 @@ public final class Screen {
                 out.add("  " + Ansi.style(Ansi.RED, (i == 0 ? "✗ " : "  ") + wrapped.get(i)));
             }
         }
+        return out;
+    }
+
+    private static List<String> hintLines(Play p, int width) {
+        List<String> out = new ArrayList<>();
         for (int h = 0; h < p.hints().size(); h++) {
             List<String> wrapped = wrap("Hint " + (h + 1) + ": " + p.hints().get(h), width - 2);
             for (int i = 0; i < wrapped.size(); i++) {
                 out.add("  " + Ansi.style(Ansi.YELLOW, (i == 0 ? "💡 " : "   ") + wrapped.get(i)));
             }
-        }
-        if (out.size() > cap) {
-            out = new ArrayList<>(out.subList(0, cap));
         }
         return out;
     }

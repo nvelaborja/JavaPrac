@@ -12,7 +12,7 @@ public final class KeyDecoder {
 
     public enum Type {
         CHAR, ENTER, BACKSPACE, DELETE, TAB, UP, DOWN, LEFT, RIGHT, HOME, END,
-        SUBMIT, HINT, REVEAL, SKIP, QUIT, ESCAPE, UNKNOWN, TIMEOUT
+        SUBMIT, HINT, REVEAL, SKIP, QUIT, ESCAPE, UNKNOWN
     }
 
     public record Key(Type type, int ch) {
@@ -32,15 +32,6 @@ public final class KeyDecoder {
 
     public KeyDecoder(Source source) {
         this.source = source;
-    }
-
-    /** Waits up to {@code timeoutMs} for a key; returns a TIMEOUT key if none arrives. */
-    public Key poll(long timeoutMs) throws IOException {
-        int next = source.peek(timeoutMs);
-        if (next == TIMED_OUT) {
-            return Key.of(Type.TIMEOUT);
-        }
-        return next == EOF ? Key.of(Type.QUIT) : next();
     }
 
     public Key next() throws IOException {

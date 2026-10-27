@@ -17,6 +17,8 @@ import org.jline.utils.NonBlockingReader;
 /** The interactive loop: show a challenge, edit, submit, buzz or celebrate, repeat. */
 public final class Tui {
     private static final long TICK_MS = 250;
+    /** While keys keep arriving (a held arrow, a paste) redraw at most this often, roughly 30 frames a second. */
+    private static final long MIN_FRAME_MS = 33;
     private static final long FLASH_MS = 1200;
     /** Reveal one more hint after every this many failed attempts. */
     private static final int FAILURES_PER_HINT = 2;
@@ -27,8 +29,7 @@ public final class Tui {
 
     private final Terminal terminal;
     private final PrintWriter out;
-    private final KeyDecoder decoder;
-    private final NonBlockingReader reader;
+    private final KeyPump keys;
     private final Grader grader;
     private final Sounds sounds;
     private final History history;
@@ -41,8 +42,8 @@ public final class Tui {
     public Tui(Terminal terminal, Grader grader, History history, boolean sound) {
         this.terminal = terminal;
         this.out = terminal.writer();
-        this.reader = terminal.reader();
-        this.decoder = new KeyDecoder(new KeyDecoder.Source() {
+        NonBlockingReader reader = terminal.reader();
+        this.keys = new KeyPump(new KeyDecoder(new KeyDecoder.Source() {
             @Override
             public int read() throws IOException {
                 return reader.read();
@@ -52,7 +53,7 @@ public final class Tui {
             public int peek(long timeoutMs) throws IOException {
                 return reader.peek(timeoutMs);
             }
-        });
+        }));
         this.grader = grader;
         this.history = history;
         this.sounds = new Sounds(sound, out);
@@ -85,19 +86,27 @@ public final class Tui {
         boolean showSolution = false;
         Instant startedAt = null;
         Instant flashUntil = Instant.MIN;
-        boolean redraw = true;
+        boolean dirty = true;
+        long lastDrawNanos = 0;
 
         while (true) {
-            if (redraw || screenResized()) {
+            if (screenResized()) {
+                dirty = true;
+            }
+            boolean frameDue = (System.nanoTime() - lastDrawNanos) / 1_000_000 >= MIN_FRAME_MS;
+            // draw at once when idle; only hold a frame back while more keys are already waiting and one was just drawn
+            if (dirty && (frameDue || !keys.hasPending())) {
                 Instant now = Instant.now();
                 Duration elapsed = startedAt == null ? Duration.ZERO : Duration.between(startedAt, now);
                 Screen.Border border = now.isBefore(flashUntil) ? Screen.Border.FAIL : Screen.Border.NEUTRAL;
                 draw(screen, new Screen.Play(challenge, editor, elapsed, startedAt != null, attempts, feedback,
                         challenge.hints().subList(0, hintsShown), false, border, solutionLines(challenge, showSolution)));
+                dirty = false;
+                lastDrawNanos = System.nanoTime();
             }
-            Key key = decoder.poll(TICK_MS);
-            if (key.type() == KeyDecoder.Type.TIMEOUT) {
-                redraw = true; // keeps the clock ticking and clears the red flash
+            Key key = keys.poll(dirty ? 1 : TICK_MS);
+            if (key == null) {
+                dirty = true; // the tick keeps the clock moving and clears the red flash
                 continue;
             }
             boolean realKeystroke = switch (key.type()) {
@@ -154,8 +163,7 @@ public final class Tui {
                 }
                 default -> { }
             }
-            // while a paste is still arriving, skip drawing until it has been consumed
-            redraw = reader.peek(1) == KeyDecoder.TIMED_OUT;
+            dirty = true;
         }
     }
 
@@ -167,7 +175,7 @@ public final class Tui {
         out.print(Ansi.ESC + "2J" + frame);
         out.flush();
         while (true) {
-            Key key = decoder.next();
+            Key key = keys.take();
             if (key.type() == KeyDecoder.Type.ENTER) {
                 out.print(Ansi.ESC + "2J");
                 return Next.CONTINUE;

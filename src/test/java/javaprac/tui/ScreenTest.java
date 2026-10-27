@@ -72,8 +72,8 @@ class ScreenTest {
         }
 
         @Test
-        void revealedSolutionReplacesFeedbackAndHintsAndShowsEveryLine() {
-            // given: a failed attempt with a hint showing, then the solution is revealed
+        void revealedSolutionIsShownAlongsideTheErrorAndHintsAndInFull() {
+            // given: a failed attempt with a hint showing, and the solution is revealed on top of it
             Challenge multiLine = new Challenge("t.x", "T", List.of(), 1, Kind.STATEMENTS, "p", "", "",
                     List.of(new Case(null, List.of("true"))), Structure.NONE, List.of("h"), "int a = 1;\nint b = 2;", List.of());
             Play revealed = new Play(multiLine, new Editor(""), Duration.ZERO, true, 2, List.of("old error"), List.of("h"),
@@ -82,12 +82,13 @@ class ScreenTest {
             // when: rendered
             String text = plain(new Screen().renderPlay(revealed, 100, 30).ansi());
 
-            // then: the solution is shown in full and the stale feedback is gone
+            // then: the player still sees why they failed, and the whole solution, error first
             assertTrue(text.contains("Solution (type it in to finish; ^R hides it)"));
             assertTrue(text.contains("    int a = 1;"));
             assertTrue(text.contains("    int b = 2;"));
-            assertFalse(text.contains("old error"));
-            assertFalse(text.contains("Hint 1"));
+            assertTrue(text.contains("✗ old error"));
+            assertTrue(text.contains("Hint 1: h"));
+            assertTrue(text.indexOf("old error") < text.indexOf("Solution (type it in"), "error should precede the solution");
         }
 
         @Test
@@ -98,8 +99,23 @@ class ScreenTest {
 
             Screen.Frame frame = new Screen().renderPlay(revealed, 100, 24);
 
-            assertTrue(plain(frame.ansi()).contains("^N skip shows all of it"));
+            assertTrue(plain(frame.ansi()).contains("^N skip shows the full solution"));
             assertTrue(frame.cursorRow() <= 24);
+        }
+
+        @Test
+        void keepsTheHintVisibleEvenWhenManyErrorLinesCompeteForSpace() {
+            // given: a long error list and a hint, in a short terminal
+            List<String> manyErrors = java.util.stream.IntStream.rangeClosed(1, 12).mapToObj(i -> "error number " + i).toList();
+            Play p = play(new Editor(""), manyErrors, List.of("the hint text"), false, Border.FAIL);
+
+            // when: rendered
+            String text = plain(new Screen().renderPlay(p, 100, 24).ansi());
+
+            // then: the hint survives and the errors are what got trimmed
+            assertTrue(text.contains("Hint 1: the hint text"));
+            assertTrue(text.contains("error number 1"));
+            assertFalse(text.contains("error number 12"));
         }
 
         @Test

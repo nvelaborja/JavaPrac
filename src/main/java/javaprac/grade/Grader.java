@@ -8,8 +8,10 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import javax.tools.Diagnostic;
@@ -68,7 +70,8 @@ public final class Grader {
         if (ok) {
             return null;
         }
-        List<String> messages = new ArrayList<>();
+        // a missing symbol is reported once per assertion that uses it, so identical messages are collapsed
+        Set<String> messages = new LinkedHashSet<>();
         for (Diagnostic<? extends JavaFileObject> d : diagnostics.getDiagnostics()) {
             if (d.getKind() != Diagnostic.Kind.ERROR) {
                 continue;

@@ -88,7 +88,7 @@ class KeyDecoderTest {
     }
 
     @Test
-    void pollReturnsTimeoutWhenNothingArrives() throws IOException {
-        assertEquals(Type.TIMEOUT, decoderFor("").poll(10).type());
+    void endOfInputIsTreatedAsQuit() throws IOException {
+        assertEquals(Type.QUIT, decoderFor("").next().type());
     }
 }

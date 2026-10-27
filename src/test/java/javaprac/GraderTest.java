@@ -224,6 +224,20 @@ class GraderTest {
         }
 
         @Test
+        void collapsesTheSameMissingSymbolReportedByEveryAssertion() {
+            // given: three asserts that each use the missing type
+            Challenge c = challenge(Kind.DECLARATIONS, "",
+                    List.of("new Point(1, 2).x() == 1", "new Point(3, 4).y() == 4", "new Point(0, 0).equals(new Point(0, 0))"),
+                    Structure.NONE);
+
+            // when: the user declares a differently named type
+            Verdict v = grader.grade(c, "record Pt(int x, int y) {}");
+
+            // then: javac's identical complaints appear once, not three times
+            assertEquals(1, v.message().lines().count(), v.message());
+        }
+
+        @Test
         void reportsMissingTypesAsNotFittingTheChallenge() {
             Challenge c = challenge(Kind.DECLARATIONS, "", List.of("new Point(1, 2).x() == 1"), Structure.NONE);
             Verdict v = grader.grade(c, "record Pt(int x, int y) {}");
