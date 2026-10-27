@@ -10,7 +10,7 @@ public final class Screen {
     public static final int MIN_WIDTH = 60;
     public static final int MIN_HEIGHT = 20;
     private static final int GUTTER = 4;
-    private static final String FOOTER = "^D submit   ^K hint   ^R solution   ^N skip   ^Q quit";
+    private static final String FOOTER = "^D submit   ^G hint   ^R solution   ^N skip   ^Q quit";
 
     public enum Border { NEUTRAL, FAIL, PASS }
 

@@ -12,6 +12,7 @@ import javaprac.grade.Verifier;
 import javaprac.model.Challenge;
 import javaprac.model.ChallengeLoader;
 import javaprac.store.History;
+import javaprac.tui.KeyInspector;
 import javaprac.tui.Selector;
 import javaprac.tui.Tui;
 import org.jline.terminal.Attributes;
@@ -27,8 +28,11 @@ public final class Main {
               javaprac list [--tag T]...     list challenges
               javaprac stats                 your history by topic
               javaprac verify                run every reference solution through the grader
+              javaprac keys                  show what your terminal sends for each key (for debugging shortcuts)
 
-            In the editor:  ^D submit   ^K hint   ^N skip   ^Q quit   (arrows, Home/End, Tab = 4 spaces)
+            In the editor:  ^D submit   ^G hint   ^R solution   ^N skip   ^Q quit
+            Editing:        arrows, Home/End, Option/Alt/Ctrl+arrows by word, Option+Backspace and ^W delete a word,
+                            ^U deletes to line start, ^K to line end, ^A/^E line start/end, Tab = 4 spaces
             """;
 
     private Main() {}
@@ -43,6 +47,7 @@ public final class Main {
                 case "list" -> list(Options.parse(rest));
                 case "stats" -> stats();
                 case "verify" -> verify();
+                case "keys" -> keys();
                 case "help" -> usage(0);
                 default -> usage(2);
             };
@@ -147,6 +152,22 @@ public final class Main {
             System.out.printf("%-14s %6d %6d %10s %9.1f%n", topic, list.size(), solved.size(),
                     avg.toMinutesPart() + "m" + avg.toSecondsPart() + "s", avgTries);
         });
+        return 0;
+    }
+
+    private static int keys() throws IOException {
+        if (System.console() == null) {
+            System.err.println("The key inspector needs an interactive terminal.");
+            return 2;
+        }
+        try (Terminal terminal = TerminalBuilder.builder().system(true).build()) {
+            Attributes saved = terminal.enterRawMode();
+            try {
+                KeyInspector.run(terminal);
+            } finally {
+                terminal.setAttributes(saved);
+            }
+        }
         return 0;
     }
 

@@ -34,11 +34,20 @@ brew install openjdk@21 gum
 | Key | Action |
 |-----|--------|
 | `^D` | submit |
-| `^K` | reveal the next hint (hints also appear automatically after every 2 failed attempts) |
+| `^G` | reveal the next hint (hints also appear automatically after every 2 failed attempts) |
 | `^R` | reveal the solution under the editor (type it in to finish; `^R` again hides it) |
 | `^N` | skip: show the solution and move on |
 | `^Q` | quit |
-| arrows, Home/End, Backspace/Delete, Tab (4 spaces) | edit |
+| arrows, Home/End, `^A`/`^E`, Backspace/Delete, Tab (4 spaces) | move and edit |
+| Option/Alt/Ctrl + Left/Right, `Esc b` / `Esc f` | move by word |
+| Option + Backspace, `^W` | delete the word before the cursor (`^W` stops only at spaces) |
+| Alt + `d`, Option/Alt/Ctrl + Delete | delete the word after the cursor |
+| `^U` / `^K` | delete to the start / end of the line (at a line end, `^K` joins the next line) |
+| Cmd + Left/Right (terminal permitting) | start / end of line |
+
+Terminals disagree about what Option, Alt and Cmd send, and many have a setting for it (for example "Use Option as Meta key" in
+Terminal.app, or the "Natural Text Editing" key preset in iTerm2). If a shortcut doesn't work, run `./play.sh keys` to see exactly
+which bytes your terminal sends and how JavaPrac reads them.
 
 The clock starts on your first keystroke and pauses while the compiler runs. A buzzer (terminal bell, plus a system sound on
 macOS) plays on a failed attempt; pass `--mute` to silence it. History is appended to `~/.javaprac/history.jsonl`, including whether you revealed the solution

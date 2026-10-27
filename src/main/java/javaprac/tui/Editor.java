@@ -120,6 +120,110 @@ public final class Editor {
         }
     }
 
+    /** Readline's backward-word (Option-Left, Ctrl-Left, Alt-b): to the start of the previous word. */
+    public void wordLeft() {
+        if (col == 0) {
+            left();
+            return;
+        }
+        col = wordStartBefore(lines.get(row), col);
+        wantedCol = col;
+    }
+
+    /** Readline's forward-word (Option-Right, Ctrl-Right, Alt-f): to the end of the next word. */
+    public void wordRight() {
+        StringBuilder current = lines.get(row);
+        if (col == current.length()) {
+            right();
+            return;
+        }
+        col = wordEndAfter(current, col);
+        wantedCol = col;
+    }
+
+    /** Readline's backward-kill-word (Option-Backspace): deletes back to the start of the word. */
+    public void deleteWordBack() {
+        if (col == 0) {
+            backspace();
+            return;
+        }
+        deleteRange(wordStartBefore(lines.get(row), col), col);
+    }
+
+    /** Readline's kill-word (Alt-d, Option-Delete): deletes forward to the end of the word. */
+    public void deleteWordForward() {
+        StringBuilder current = lines.get(row);
+        if (col == current.length()) {
+            delete();
+            return;
+        }
+        deleteRange(col, wordEndAfter(current, col));
+    }
+
+    /** Bash's unix-word-rubout (Ctrl-W): deletes back to the previous whitespace, punctuation included. */
+    public void deleteBlankDelimitedWordBack() {
+        if (col == 0) {
+            backspace();
+            return;
+        }
+        StringBuilder current = lines.get(row);
+        int start = col;
+        while (start > 0 && Character.isWhitespace(current.charAt(start - 1))) {
+            start--;
+        }
+        while (start > 0 && !Character.isWhitespace(current.charAt(start - 1))) {
+            start--;
+        }
+        deleteRange(start, col);
+    }
+
+    /** Ctrl-U: deletes everything before the cursor on this line. */
+    public void deleteToLineStart() {
+        deleteRange(0, col);
+    }
+
+    /** Ctrl-K: deletes everything after the cursor on this line, or joins the next line when already at the end. */
+    public void deleteToLineEnd() {
+        StringBuilder current = lines.get(row);
+        if (col < current.length()) {
+            current.setLength(col);
+        } else {
+            delete();
+        }
+    }
+
+    private void deleteRange(int from, int to) {
+        lines.get(row).delete(from, to);
+        col = from;
+        wantedCol = col;
+    }
+
+    private static int wordStartBefore(CharSequence line, int from) {
+        int i = from;
+        while (i > 0 && !isWordChar(line.charAt(i - 1))) {
+            i--;
+        }
+        while (i > 0 && isWordChar(line.charAt(i - 1))) {
+            i--;
+        }
+        return i;
+    }
+
+    private static int wordEndAfter(CharSequence line, int from) {
+        int i = from;
+        while (i < line.length() && !isWordChar(line.charAt(i))) {
+            i++;
+        }
+        while (i < line.length() && isWordChar(line.charAt(i))) {
+            i++;
+        }
+        return i;
+    }
+
+    private static boolean isWordChar(char c) {
+        return Character.isLetterOrDigit(c) || c == '_';
+    }
+
     public void home() {
         col = 0;
         wantedCol = 0;

@@ -130,6 +130,13 @@ public final class Tui {
                 case DOWN -> editor.down();
                 case HOME -> editor.home();
                 case END -> editor.end();
+                case WORD_LEFT -> editor.wordLeft();
+                case WORD_RIGHT -> editor.wordRight();
+                case DELETE_WORD_BACK -> editor.deleteWordBack();
+                case DELETE_WORD_FORWARD -> editor.deleteWordForward();
+                case DELETE_BLANK_WORD_BACK -> editor.deleteBlankDelimitedWordBack();
+                case DELETE_TO_LINE_START -> editor.deleteToLineStart();
+                case DELETE_TO_LINE_END -> editor.deleteToLineEnd();
                 case HINT -> hintsShown = Math.min(challenge.hints().size(), hintsShown + 1);
                 case REVEAL -> {
                     revealed = true;

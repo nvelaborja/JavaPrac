@@ -42,13 +42,30 @@ class KeyDecoderTest {
                 Arguments.of("\u001b[F", Type.END),
                 Arguments.of("\u001bOH", Type.HOME),
                 Arguments.of("\u001b[3~", Type.DELETE),
-                Arguments.of("\u001b[1;5C", Type.RIGHT), // modifiers are ignored, so Ctrl-Right moves one column
+                Arguments.of("\u001b[1;5C", Type.WORD_RIGHT),   // Ctrl-Right
+                Arguments.of("\u001b[1;5D", Type.WORD_LEFT),    // Ctrl-Left
+                Arguments.of("\u001b[1;3D", Type.WORD_LEFT),    // Alt-Left
+                Arguments.of("\u001b[1;3C", Type.WORD_RIGHT),   // Alt-Right
+                Arguments.of("\u001b[1;9D", Type.HOME),         // Meta/Cmd-Left
+                Arguments.of("\u001b[1;9C", Type.END),          // Meta/Cmd-Right
+                Arguments.of("\u001b[1;2C", Type.RIGHT),        // Shift-Right is a plain arrow
+                Arguments.of("\u001b[3;3~", Type.DELETE_WORD_FORWARD),
+                Arguments.of("\u001b[3;5~", Type.DELETE_WORD_FORWARD),
+                Arguments.of("\u001bb", Type.WORD_LEFT),        // Option-Left in Terminal.app and iTerm2 presets
+                Arguments.of("\u001bf", Type.WORD_RIGHT),
+                Arguments.of("\u001bd", Type.DELETE_WORD_FORWARD),
+                Arguments.of("\u001b\u007f", Type.DELETE_WORD_BACK),  // Option-Backspace
+                Arguments.of("\u0017", Type.DELETE_BLANK_WORD_BACK),   // Ctrl-W
+                Arguments.of("\u0015", Type.DELETE_TO_LINE_START),     // Ctrl-U
+                Arguments.of("\u0002", Type.LEFT),                     // Ctrl-B
+                Arguments.of("\u0006", Type.RIGHT),                    // Ctrl-F
+                Arguments.of("\u0007", Type.HINT),                     // Ctrl-G
                 Arguments.of("\u001b", Type.ESCAPE),
                 Arguments.of("\r", Type.ENTER),
                 Arguments.of("\u007f", Type.BACKSPACE),
                 Arguments.of("\t", Type.TAB),
                 Arguments.of("\u0004", Type.SUBMIT),
-                Arguments.of("\u000b", Type.HINT),
+                Arguments.of("\u000b", Type.DELETE_TO_LINE_END),   // Ctrl-K, as in a shell
                 Arguments.of("\u0012", Type.REVEAL),
                 Arguments.of("\u000e", Type.SKIP),
                 Arguments.of("\u0011", Type.QUIT));
