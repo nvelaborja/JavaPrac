@@ -1,47 +1,41 @@
 package javaprac.tui;
 
 import java.io.PrintWriter;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
-/** The fail buzzer and pass chime: a terminal bell everywhere, plus a system sound on macOS. */
+/** The fail buzzer and pass chime: a terminal bell for failures, plus a system sound where one is available. */
 final class Sounds {
-    private static final Path BUZZ = Path.of("/System/Library/Sounds/Basso.aiff");
-    private static final Path CHIME = Path.of("/System/Library/Sounds/Glass.aiff");
+    enum Cue { BUZZ, CHIME }
+
+    /** Where the system sounds go; replaced in tests so they stay silent. */
+    interface Output {
+        void play(Cue cue);
+    }
 
     private final boolean enabled;
     private final PrintWriter terminal;
+    private final Output output;
 
     Sounds(boolean enabled, PrintWriter terminal) {
+        this(enabled, terminal, enabled ? new SystemAudio() : cue -> { });
+    }
+
+    Sounds(boolean enabled, PrintWriter terminal, Output output) {
         this.enabled = enabled;
         this.terminal = terminal;
+        this.output = output;
     }
 
     void fail() {
         if (enabled) {
             terminal.print('\u0007');
             terminal.flush();
-            play(BUZZ);
+            output.play(Cue.BUZZ);
         }
     }
 
     void pass() {
         if (enabled) {
-            play(CHIME);
-        }
-    }
-
-    private static void play(Path sound) {
-        if (!Files.exists(sound)) {
-            return;
-        }
-        try {
-            new ProcessBuilder("afplay", sound.toString())
-                    .redirectOutput(ProcessBuilder.Redirect.DISCARD)
-                    .redirectError(ProcessBuilder.Redirect.DISCARD)
-                    .start();
-        } catch (java.io.IOException ignored) {
-            // sound is a nicety; the terminal bell already fired
+            output.play(Cue.CHIME);
         }
     }
 }
