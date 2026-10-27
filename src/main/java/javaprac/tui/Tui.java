@@ -81,6 +81,8 @@ public final class Tui {
         int attempts = 0;
         int hintsShown = 0;
         List<String> feedback = List.of();
+        boolean revealed = false;
+        boolean showSolution = false;
         Instant startedAt = null;
         Instant flashUntil = Instant.MIN;
         boolean redraw = true;
@@ -91,14 +93,17 @@ public final class Tui {
                 Duration elapsed = startedAt == null ? Duration.ZERO : Duration.between(startedAt, now);
                 Screen.Border border = now.isBefore(flashUntil) ? Screen.Border.FAIL : Screen.Border.NEUTRAL;
                 draw(screen, new Screen.Play(challenge, editor, elapsed, startedAt != null, attempts, feedback,
-                        challenge.hints().subList(0, hintsShown), false, border));
+                        challenge.hints().subList(0, hintsShown), false, border, solutionLines(challenge, showSolution)));
             }
             Key key = decoder.poll(TICK_MS);
             if (key.type() == KeyDecoder.Type.TIMEOUT) {
                 redraw = true; // keeps the clock ticking and clears the red flash
                 continue;
             }
-            boolean realKeystroke = key.type() != KeyDecoder.Type.ESCAPE && key.type() != KeyDecoder.Type.UNKNOWN;
+            boolean realKeystroke = switch (key.type()) {
+                case ESCAPE, UNKNOWN, HINT, REVEAL -> false;
+                default -> true;
+            };
             if (startedAt == null && realKeystroke) {
                 startedAt = Instant.now();
             }
@@ -115,18 +120,22 @@ public final class Tui {
                 case HOME -> editor.home();
                 case END -> editor.end();
                 case HINT -> hintsShown = Math.min(challenge.hints().size(), hintsShown + 1);
+                case REVEAL -> {
+                    revealed = true;
+                    showSolution = !showSolution;
+                }
                 case QUIT -> {
                     return Next.QUIT;
                 }
                 case SKIP -> {
                     skipped++;
-                    record(challenge, false, startedAt, attempts, hintsShown);
-                    return summary(challenge, false, startedAt, attempts, hintsShown, editor.text());
+                    record(challenge, false, startedAt, attempts, hintsShown, true);
+                    return summary(challenge, false, startedAt, attempts, hintsShown, true, editor.text());
                 }
                 case SUBMIT -> {
                     attempts++;
                     draw(screen, new Screen.Play(challenge, editor, elapsedSince(startedAt), true, attempts, List.of(),
-                            challenge.hints().subList(0, hintsShown), true, Screen.Border.NEUTRAL));
+                            challenge.hints().subList(0, hintsShown), true, Screen.Border.NEUTRAL, List.of()));
                     Instant gradingStarted = Instant.now();
                     Verdict verdict = grader.grade(challenge, editor.text());
                     // the clock measures the player, not javac and the sandbox JVM
@@ -135,8 +144,8 @@ public final class Tui {
                         solved++;
                         solveTime = solveTime.plus(elapsedSince(startedAt));
                         sounds.pass();
-                        record(challenge, true, startedAt, attempts, hintsShown);
-                        return summary(challenge, true, startedAt, attempts, hintsShown, editor.text());
+                        record(challenge, true, startedAt, attempts, hintsShown, revealed);
+                        return summary(challenge, true, startedAt, attempts, hintsShown, revealed, editor.text());
                     }
                     feedback = List.of(verdict.message().split("\n"));
                     flashUntil = Instant.now().plusMillis(FLASH_MS);
@@ -150,10 +159,10 @@ public final class Tui {
         }
     }
 
-    private Next summary(Challenge challenge, boolean passed, Instant startedAt, int attempts, int hints, String submitted)
-            throws IOException {
+    private Next summary(Challenge challenge, boolean passed, Instant startedAt, int attempts, int hints,
+                         boolean revealed, String submitted) throws IOException {
         String frame = new Screen().renderSummary(
-                new Screen.Summary(challenge, passed, elapsedSince(startedAt), attempts, hints, submitted, solved),
+                new Screen.Summary(challenge, passed, elapsedSince(startedAt), attempts, hints, revealed, submitted, solved),
                 width(), height());
         out.print(Ansi.ESC + "2J" + frame);
         out.flush();
@@ -169,9 +178,13 @@ public final class Tui {
         }
     }
 
-    private void record(Challenge challenge, boolean passed, Instant startedAt, int attempts, int hints) {
+    private static List<String> solutionLines(Challenge challenge, boolean show) {
+        return show ? List.of(challenge.reference().split("\n")) : List.of();
+    }
+
+    private void record(Challenge challenge, boolean passed, Instant startedAt, int attempts, int hints, boolean revealed) {
         history.append(new History.Entry(Instant.now(), challenge.id(), passed, elapsedSince(startedAt).toSeconds(),
-                attempts, hints));
+                attempts, hints, revealed));
     }
 
     private void draw(Screen screen, Screen.Play play) {

@@ -21,7 +21,7 @@ class ScreenTest {
             List.of(new Case(null, List.of("true"))), Structure.NONE, List.of("first hint", "second hint"), "nums", List.of());
 
     private static Play play(Editor editor, List<String> feedback, List<String> hints, boolean grading, Border border) {
-        return new Play(CHALLENGE, editor, Duration.ofSeconds(75), true, 2, feedback, hints, grading, border);
+        return new Play(CHALLENGE, editor, Duration.ofSeconds(75), true, 2, feedback, hints, grading, border, List.of());
     }
 
     private static String plain(String ansi) {
@@ -69,6 +69,43 @@ class ScreenTest {
             assertTrue(text.contains("  ✗ line 1, col 5: cannot find symbol: class range"), text);
             assertTrue(text.contains("    new IntStream.range(1, 5)"), text);
             assertTrue(text.contains("        ^"), text);
+        }
+
+        @Test
+        void revealedSolutionReplacesFeedbackAndHintsAndShowsEveryLine() {
+            // given: a failed attempt with a hint showing, then the solution is revealed
+            Challenge multiLine = new Challenge("t.x", "T", List.of(), 1, Kind.STATEMENTS, "p", "", "",
+                    List.of(new Case(null, List.of("true"))), Structure.NONE, List.of("h"), "int a = 1;\nint b = 2;", List.of());
+            Play revealed = new Play(multiLine, new Editor(""), Duration.ZERO, true, 2, List.of("old error"), List.of("h"),
+                    false, Border.NEUTRAL, List.of("int a = 1;", "int b = 2;"));
+
+            // when: rendered
+            String text = plain(new Screen().renderPlay(revealed, 100, 30).ansi());
+
+            // then: the solution is shown in full and the stale feedback is gone
+            assertTrue(text.contains("Solution (type it in to finish; ^R hides it)"));
+            assertTrue(text.contains("    int a = 1;"));
+            assertTrue(text.contains("    int b = 2;"));
+            assertFalse(text.contains("old error"));
+            assertFalse(text.contains("Hint 1"));
+        }
+
+        @Test
+        void truncatesATallSolutionWithAPointerToSkipInsteadOfBreakingTheLayout() {
+            List<String> tall = java.util.stream.IntStream.rangeClosed(1, 40).mapToObj(i -> "line" + i).toList();
+            Play revealed = new Play(CHALLENGE, new Editor(""), Duration.ZERO, true, 0, List.of(), List.of(), false,
+                    Border.NEUTRAL, tall);
+
+            Screen.Frame frame = new Screen().renderPlay(revealed, 100, 24);
+
+            assertTrue(plain(frame.ansi()).contains("^N skip shows all of it"));
+            assertTrue(frame.cursorRow() <= 24);
+        }
+
+        @Test
+        void footerAdvertisesTheSolutionKey() {
+            String text = plain(new Screen().renderPlay(play(new Editor(""), List.of(), List.of(), false, Border.NEUTRAL), 100, 30).ansi());
+            assertTrue(text.contains("^R solution"));
         }
 
         @Test
@@ -126,7 +163,7 @@ class ScreenTest {
         @Test
         void showsTheReferenceSolutionAndYoursWhenTheyDiffer() {
             String text = plain(new Screen().renderSummary(
-                    new Screen.Summary(CHALLENGE, true, Duration.ofSeconds(42), 3, 1, "nums.stream().toList()", 4), 100, 30));
+                    new Screen.Summary(CHALLENGE, true, Duration.ofSeconds(42), 3, 1, false, "nums.stream().toList()", 4), 100, 30));
 
             assertTrue(text.contains("Passed: Demo"));
             assertTrue(text.contains("00:42"));
@@ -137,9 +174,10 @@ class ScreenTest {
         @Test
         void labelsSkippedChallengesAndOmitsTheUsersCode() {
             String text = plain(new Screen().renderSummary(
-                    new Screen.Summary(CHALLENGE, false, Duration.ofSeconds(5), 0, 0, "", 0), 100, 30));
+                    new Screen.Summary(CHALLENGE, false, Duration.ofSeconds(5), 0, 0, true, "", 0), 100, 30));
 
             assertTrue(text.contains("Skipped: Demo"));
+            assertTrue(text.contains("solution revealed"));
             assertFalse(text.contains("Your solution"));
         }
     }

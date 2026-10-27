@@ -18,14 +18,25 @@ class HistoryTest {
         Instant at = Instant.parse("2026-10-27T12:00:00Z");
 
         // when: two entries are appended and read back
-        history.append(new Entry(at, "streams.limit-first-n", true, 42, 3, 1));
-        history.append(new Entry(at.plusSeconds(60), "types.record-point", false, 7, 0, 0));
+        history.append(new Entry(at, "streams.limit-first-n", true, 42, 3, 1, true));
+        history.append(new Entry(at.plusSeconds(60), "types.record-point", false, 7, 0, 0, false));
 
         // then: both come back intact and in order
         var entries = history.readAll();
         assertEquals(2, entries.size());
-        assertEquals(new Entry(at, "streams.limit-first-n", true, 42, 3, 1), entries.get(0));
+        assertEquals(new Entry(at, "streams.limit-first-n", true, 42, 3, 1, true), entries.get(0));
         assertEquals("types", entries.get(1).topic());
+    }
+
+    @Test
+    void readsEntriesWrittenBeforeTheRevealFieldExisted(@TempDir Path dir) throws Exception {
+        // given: a v1 history line with no "revealed" field
+        Path file = dir.resolve("history.jsonl");
+        java.nio.file.Files.writeString(file,
+                "{\"at\":\"2026-10-27T12:00:00Z\",\"id\":\"a.b\",\"passed\":true,\"seconds\":5,\"attempts\":1,\"hints\":0}\n");
+
+        // when / then: it reads as not revealed
+        assertEquals(false, new History(file).readAll().getFirst().revealed());
     }
 
     @Test

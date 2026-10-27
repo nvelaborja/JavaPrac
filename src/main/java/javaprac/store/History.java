@@ -16,7 +16,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 /** An append-only log of finished challenges, one JSON object per line (JSON is also valid YAML, so SnakeYAML reads it). */
 public final class History {
-    public record Entry(Instant at, String id, boolean passed, long seconds, int attempts, int hints) {
+    public record Entry(Instant at, String id, boolean passed, long seconds, int attempts, int hints, boolean revealed) {
         /** The topic is the part of the id before the first dot, e.g. {@code streams}. */
         public String topic() {
             int dot = id.indexOf('.');
@@ -25,7 +25,7 @@ public final class History {
 
         String toJson() {
             return "{\"at\":\"" + at + "\",\"id\":\"" + id.replace("\"", "") + "\",\"passed\":" + passed
-                    + ",\"seconds\":" + seconds + ",\"attempts\":" + attempts + ",\"hints\":" + hints + "}";
+                    + ",\"seconds\":" + seconds + ",\"attempts\":" + attempts + ",\"hints\":" + hints + ",\"revealed\":" + revealed + "}";
         }
     }
 
@@ -71,7 +71,9 @@ public final class History {
                             Boolean.parseBoolean(m.get("passed").toString()),
                             ((Number) m.get("seconds")).longValue(),
                             ((Number) m.get("attempts")).intValue(),
-                            ((Number) m.get("hints")).intValue()));
+                            ((Number) m.get("hints")).intValue(),
+                            // older entries predate the reveal command
+                            m.get("revealed") != null && Boolean.parseBoolean(m.get("revealed").toString())));
                 }
             }
         } catch (IOException e) {

@@ -10,16 +10,17 @@ public final class Screen {
     public static final int MIN_WIDTH = 60;
     public static final int MIN_HEIGHT = 20;
     private static final int GUTTER = 4;
-    private static final String FOOTER = "^D submit   ^K hint   ^N skip   ^Q quit";
+    private static final String FOOTER = "^D submit   ^K hint   ^R solution   ^N skip   ^Q quit";
 
     public enum Border { NEUTRAL, FAIL, PASS }
 
     /** What the play screen shows. {@code feedback} is the last verdict message, {@code hints} those revealed so far. */
     public record Play(Challenge challenge, Editor editor, Duration elapsed, boolean timerStarted, int attempts,
-                       List<String> feedback, List<String> hints, boolean grading, Border border) {}
+                       List<String> feedback, List<String> hints, boolean grading, Border border,
+                       List<String> solution) {}
 
     public record Summary(Challenge challenge, boolean passed, Duration elapsed, int attempts, int hintsUsed,
-                          String submitted, int solvedThisSession) {}
+                          boolean revealed, String submitted, int solvedThisSession) {}
 
     /** The rendered frame plus where the real terminal cursor belongs. */
     public record Frame(String ansi, int cursorRow, int cursorCol) {}
@@ -41,13 +42,14 @@ public final class Screen {
         }
         rows.add("");
 
-        int feedbackCap = 6;
+        boolean showingSolution = !p.solution().isEmpty();
+        int feedbackCap = showingSolution ? 18 : 6;
         int givenCap = 6;
         List<String> feedback = feedbackLines(p, width - 4, feedbackCap);
         List<String> given = givenLines(c, width, givenCap);
         int bodyHeight = height - (rows.size() + given.size() + 2 + feedback.size() + 1);
         if (bodyHeight < 5) {
-            feedback = feedbackLines(p, width - 4, 3);
+            feedback = feedbackLines(p, width - 4, showingSolution ? 8 : 3);
             given = givenLines(c, width, 3);
             bodyHeight = height - (rows.size() + given.size() + 2 + feedback.size() + 1);
         }
@@ -91,7 +93,7 @@ public final class Screen {
                 ? Ansi.style(Ansi.BOLD + Ansi.GREEN, "  ✓ Passed: " + s.challenge().title())
                 : Ansi.style(Ansi.BOLD + Ansi.YELLOW, "  ↷ Skipped: " + s.challenge().title()));
         rows.add(Ansi.style(Ansi.GRAY, "  " + clock(s.elapsed()) + "   attempts " + s.attempts() + "   hints " + s.hintsUsed()
-                + "   solved this session " + s.solvedThisSession()));
+                + (s.revealed() ? "   solution revealed" : "") + "   solved this session " + s.solvedThisSession()));
         rows.add("");
         rows.add(Ansi.style(Ansi.BOLD, "  Reference solution"));
         for (String line : s.challenge().reference().split("\n", -1)) {
@@ -157,6 +159,18 @@ public final class Screen {
         List<String> out = new ArrayList<>();
         if (p.grading()) {
             out.add(Ansi.style(Ansi.DIM, "  … compiling and running"));
+            return out;
+        }
+        if (!p.solution().isEmpty()) {
+            // the solution takes the place of feedback and hints so it gets the room
+            out.add(Ansi.style(Ansi.BOLD + Ansi.YELLOW, "  Solution (type it in to finish; ^R hides it)"));
+            for (String line : p.solution()) {
+                out.add("    " + Ansi.style(Ansi.CYAN, fit(line, width - 2)));
+            }
+            if (out.size() > cap) {
+                out = new ArrayList<>(out.subList(0, cap - 1));
+                out.add(Ansi.style(Ansi.DIM, "    … taller than the screen; ^N skip shows all of it"));
+            }
             return out;
         }
         for (String message : p.feedback()) {

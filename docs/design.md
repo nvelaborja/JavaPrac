@@ -79,6 +79,8 @@ Structure features: `call:NAME`, `new:TYPE`, `for`, `foreach`, `while`, `do-whil
 
 - Fail: terminal bell, system sound on macOS, red border for 1.2 s, and the compile error or failed assertion in red.
 - After every 2 failures one more hint is revealed. `^K` reveals one on demand.
+- `^R` shows the reference solution under the editor so the player can type it in and finish; the history entry is
+  flagged `revealed`. `^N` skips instead, showing the solution on the summary screen.
 - The clock starts on the first real keystroke and pauses while grading.
 - Pass or skip shows the reference solution next to the player's code.
 

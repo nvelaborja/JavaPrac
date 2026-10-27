@@ -49,6 +49,7 @@ class KeyDecoderTest {
                 Arguments.of("\t", Type.TAB),
                 Arguments.of("\u0004", Type.SUBMIT),
                 Arguments.of("\u000b", Type.HINT),
+                Arguments.of("\u0012", Type.REVEAL),
                 Arguments.of("\u000e", Type.SKIP),
                 Arguments.of("\u0011", Type.QUIT));
     }

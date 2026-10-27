@@ -35,12 +35,13 @@ brew install openjdk@21 gum
 |-----|--------|
 | `^D` | submit |
 | `^K` | reveal the next hint (hints also appear automatically after every 2 failed attempts) |
-| `^N` | skip and show the reference solution |
+| `^R` | reveal the solution under the editor (type it in to finish; `^R` again hides it) |
+| `^N` | skip: show the solution and move on |
 | `^Q` | quit |
 | arrows, Home/End, Backspace/Delete, Tab (4 spaces) | edit |
 
 The clock starts on your first keystroke and pauses while the compiler runs. A buzzer (terminal bell, plus a system sound on
-macOS) plays on a failed attempt; pass `--mute` to silence it. History is appended to `~/.javaprac/history.jsonl`
+macOS) plays on a failed attempt; pass `--mute` to silence it. History is appended to `~/.javaprac/history.jsonl`, including whether you revealed the solution
 (override the directory with `JAVAPRAC_HOME`).
 
 ## How grading works

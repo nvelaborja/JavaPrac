@@ -12,7 +12,7 @@ public final class KeyDecoder {
 
     public enum Type {
         CHAR, ENTER, BACKSPACE, DELETE, TAB, UP, DOWN, LEFT, RIGHT, HOME, END,
-        SUBMIT, HINT, SKIP, QUIT, ESCAPE, UNKNOWN, TIMEOUT
+        SUBMIT, HINT, REVEAL, SKIP, QUIT, ESCAPE, UNKNOWN, TIMEOUT
     }
 
     public record Key(Type type, int ch) {
@@ -55,6 +55,7 @@ public final class KeyDecoder {
             case 5 -> Key.of(Type.END);       // Ctrl-E
             case 4 -> Key.of(Type.SUBMIT);    // Ctrl-D
             case 11 -> Key.of(Type.HINT);     // Ctrl-K
+            case 18 -> Key.of(Type.REVEAL);   // Ctrl-R
             case 14 -> Key.of(Type.SKIP);     // Ctrl-N
             case 3, 17 -> Key.of(Type.QUIT);  // Ctrl-C, Ctrl-Q
             default -> c >= 32 ? new Key(Type.CHAR, c) : Key.of(Type.UNKNOWN);
