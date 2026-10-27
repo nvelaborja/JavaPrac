@@ -204,15 +204,16 @@
   tags: [streams, primitive-streams]
   difficulty: 2
   kind: expression
-  prompt: Produce a List<Integer> of the squares of 1 through 5 inclusive, starting from an IntStream.
+  prompt: |-
+    Starting from an IntStream, produce a List<Integer> of the squares of 1 through 5 inclusive (1, 4, 9, 16, 25).
   asserts:
     - result.equals(List.of(1, 4, 9, 16, 25))
   structure:
     require: [call:rangeClosed|call:range]
     forbid: [loop]
   hints:
-    - "IntStream has factory methods for a range of ints."
-    - "IntStream.rangeClosed(1, 5).map(i -> i * i), then boxed() before toList()."
+    - "IntStream has static factory methods for a range of ints. range(1, 5) stops at 4; one variant includes the end."
+    - "IntStream.rangeClosed(1, 5).map(i -> i * i), then boxed() to get Integers before toList()."
   reference: IntStream.rangeClosed(1, 5).map(i -> i * i).boxed().toList();
 
 - id: streams.max-by

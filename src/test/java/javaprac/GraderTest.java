@@ -93,7 +93,24 @@ class GraderTest {
 
             // then: the line number is relative to what the user typed, not the generated file
             assertEquals(Outcome.COMPILE_ERROR, v.outcome());
-            assertTrue(v.message().startsWith("line 2:"), v.message());
+            assertTrue(v.message().startsWith("line 2, col "), v.message());
+        }
+
+        @Test
+        void showsTheSourceLineWithACaretUnderTheErrorColumnAndTheMissingSymbol() {
+            // given: an expression that calls a method IntStream doesn't have
+            Challenge c = challenge(Kind.EXPRESSION, "", List.of("true"), Structure.NONE);
+
+            // when: graded
+            Verdict v = grader.grade(c, "IntStream.range(1, 5).toList()");
+
+            // then: the message names the symbol and where it was looked up, and a caret marks the column (javac points at the dot)
+            String[] lines = v.message().split("\n");
+            assertEquals(Outcome.COMPILE_ERROR, v.outcome());
+            assertTrue(lines[0].startsWith("line 1, col 22: cannot find symbol: method toList()"), lines[0]);
+            assertTrue(lines[0].contains("IntStream"), lines[0]);
+            assertEquals("  IntStream.range(1, 5).toList()", lines[1]);
+            assertEquals("  " + " ".repeat(21) + "^", lines[2]);
         }
 
         @Test

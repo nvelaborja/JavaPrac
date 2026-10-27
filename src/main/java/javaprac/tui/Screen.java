@@ -61,7 +61,7 @@ public final class Screen {
             case PASS -> Ansi.BOLD + Ansi.GREEN;
             case NEUTRAL -> Ansi.GRAY;
         };
-        String title = " Your code ";
+        String title = " " + boxTitle(c.kind()) + " ";
         rows.add(Ansi.style(borderColor, "┌─" + title + "─".repeat(Math.max(0, width - 3 - title.length())) + "┐"));
         int bodyStartRow = rows.size() + 1;
 
@@ -127,6 +127,15 @@ public final class Screen {
         return Ansi.style(Ansi.BOLD + Ansi.CYAN, line);
     }
 
+    /** Tells the player what shape of answer is expected, since the snippet is spliced into a generated program. */
+    static String boxTitle(Challenge.Kind kind) {
+        return switch (kind) {
+            case EXPRESSION -> "Your expression (value is checked; no return)";
+            case STATEMENTS -> "Your statements";
+            case DECLARATIONS -> "Your declarations (top-level types)";
+        };
+    }
+
     private static List<String> givenLines(Challenge c, int width, int cap) {
         List<String> out = new ArrayList<>();
         if (c.given().isBlank()) {
@@ -151,6 +160,11 @@ public final class Screen {
             return out;
         }
         for (String message : p.feedback()) {
+            if (message.startsWith(" ")) {
+                // preformatted (a source line or caret): wrapping would misalign the caret
+                out.add("  " + Ansi.style(Ansi.RED, fit(message, width - 2)));
+                continue;
+            }
             List<String> wrapped = wrap(message, width - 2);
             for (int i = 0; i < wrapped.size(); i++) {
                 out.add("  " + Ansi.style(Ansi.RED, (i == 0 ? "✗ " : "  ") + wrapped.get(i)));

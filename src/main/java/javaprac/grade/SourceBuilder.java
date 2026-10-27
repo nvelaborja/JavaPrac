@@ -142,7 +142,7 @@ final class SourceBuilder {
     }
 
     static String stripTrailingSemicolons(String code) {
-        String s = code.strip();
+        String s = code.stripTrailing();
         while (s.endsWith(";")) {
             s = s.substring(0, s.length() - 1).stripTrailing();
         }

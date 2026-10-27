@@ -73,16 +73,33 @@ public final class Grader {
             if (d.getKind() != Diagnostic.Kind.ERROR) {
                 continue;
             }
-            String first = d.getMessage(Locale.ENGLISH).lines().findFirst().orElse("compile error");
+            String description = describe(d.getMessage(Locale.ENGLISH));
             int userLine = built.userLine(d.getLineNumber());
             messages.add(userLine > 0
-                    ? "line " + userLine + ": " + first
-                    : "your code doesn't fit what this challenge expects (" + first + ")");
+                    ? "line " + userLine + ", col " + d.getColumnNumber() + ": " + description + "\n" + sourceWithCaret(built, d)
+                    : "your code doesn't fit what this challenge expects (" + description + ")");
             if (messages.size() == 3) {
                 break;
             }
         }
         return new Verdict(Verdict.Outcome.COMPILE_ERROR, String.join("\n", messages));
+    }
+
+    /** javac's first line, plus the offending symbol and where it was looked up, e.g. "cannot find symbol: class range". */
+    static String describe(String javacMessage) {
+        List<String> lines = javacMessage.lines().toList();
+        StringBuilder out = new StringBuilder(lines.isEmpty() ? "compile error" : lines.getFirst());
+        lines.stream().filter(l -> l.strip().startsWith("symbol:")).findFirst()
+                .ifPresent(l -> out.append(": ").append(l.strip().substring("symbol:".length()).strip()));
+        lines.stream().filter(l -> l.strip().startsWith("location:")).findFirst()
+                .ifPresent(l -> out.append(" in ").append(l.strip().substring("location:".length()).strip()));
+        return out.toString();
+    }
+
+    /** The user's line indented two spaces, then a caret under the error column. */
+    private static String sourceWithCaret(SourceBuilder.Built built, Diagnostic<? extends JavaFileObject> d) {
+        String line = built.source().lines().skip(d.getLineNumber() - 1).findFirst().orElse("");
+        return "  " + line + "\n  " + " ".repeat((int) Math.max(0, d.getColumnNumber() - 1)) + "^";
     }
 
     private static Verdict run(Path dir) throws IOException {

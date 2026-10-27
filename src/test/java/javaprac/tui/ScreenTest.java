@@ -55,6 +55,23 @@ class ScreenTest {
         }
 
         @Test
+        void titlesTheEditorBoxWithTheExpectedAnswerShape() {
+            String text = plain(new Screen().renderPlay(play(new Editor(""), List.of(), List.of(), false, Border.NEUTRAL), 100, 30).ansi());
+            assertTrue(text.contains("Your expression (value is checked; no return)"), text);
+            assertTrue(Screen.boxTitle(Kind.STATEMENTS).contains("statements"));
+            assertTrue(Screen.boxTitle(Kind.DECLARATIONS).contains("top-level types"));
+        }
+
+        @Test
+        void keepsPreformattedErrorLinesUnwrappedSoTheCaretStaysAligned() {
+            List<String> feedback = List.of("line 1, col 5: cannot find symbol: class range", "  new IntStream.range(1, 5)", "      ^");
+            String text = plain(new Screen().renderPlay(play(new Editor(""), feedback, List.of(), false, Border.FAIL), 100, 30).ansi());
+            assertTrue(text.contains("  ✗ line 1, col 5: cannot find symbol: class range"), text);
+            assertTrue(text.contains("    new IntStream.range(1, 5)"), text);
+            assertTrue(text.contains("        ^"), text);
+        }
+
+        @Test
         void tintsTheBorderRedOnlyWhenFailing() {
             Screen.Frame failing = new Screen().renderPlay(play(new Editor(""), List.of(), List.of(), false, Border.FAIL), 100, 30);
             Screen.Frame neutral = new Screen().renderPlay(play(new Editor(""), List.of(), List.of(), false, Border.NEUTRAL), 100, 30);
